@@ -5,9 +5,12 @@ cls
 echo.
 echo 	Accepted commands:
 echo. 
-echo 	c	cycle (run many iterations)
-echo 	d	debug (run one iteration)
+echo 	fc	cycle on Facebook (run many iterations)
+echo 	fd	debug on Facebook (run only once)
 echo 	g	generate Facebook SDK layer
+echo 	md	make dictionary out of file
+echo 	pc	cycle random phrase generation
+echo 	pd	generate random phrase
 echo 	r	remove all posts
 echo 	sd	set settings to default
 echo 	se	edit settings
@@ -22,7 +25,7 @@ echo.
 set /p i=" >>> "
 goto %i%
 
-:c
+:fc
 echo.
 set /p iterations=" #iterations = "
 if %iterations% EQU 1 goto d
@@ -34,16 +37,16 @@ echo.
 goto hold
 )
 echo.
-echo from psalm import PsalmBot>cycle.py
-echo for i in range(%iterations%):>>cycle.py
-echo  print("Iteration #{} ---------------------".format(i+1))>>cycle.py
-echo  PsalmBot(0,0)>>cycle.py
-echo print("\nDone iterating %iterations% posts!\n")>>cycle.py
-python cycle.py
-del cycle.py
+echo from psalm import PsalmBot>_cycle.py
+echo for i in range(%iterations%):>>_cycle.py
+echo  print("Iteration #{} ---------------------".format(i+1))>>_cycle.py
+echo  PsalmBot(0,0)>>_cycle.py
+echo print("\nDone iterating %iterations% posts!\n")>>_cycle.py
+python _cycle.py
+del _cycle.py
 goto hold
 
-:d
+:fd
 python -c "from psalm import PsalmBot; PsalmBot(0,0)"
 goto hold
 
@@ -54,14 +57,57 @@ pip install facebook-sdk --target .\python
 7z a -r -sdel facebook-sdk-layer.zip .\python
 goto hold
 
+:md
+set /p input=" Input file [*.txt]: "
+set /p output=" Output file (leave blank to copy input file's name) [*.dict]: "
+echo from mngDictionaries import MakeDict>_mkdict_temp.py
+echo dict = MakeDict("%input%","%output%")>>_mkdict_temp.py
+echo if dict != None:>>_mkdict_temp.py
+echo   print("Dictionary created successfully as "+dict+" ...\n")>>_mkdict_temp.py
+python _mkdict_temp.py
+del _mkdict_temp.py
+goto hold
+
 :tc
 :td
 :tr
 :ts
-echo from mngTokens import launch>tkmng.py
-echo launch("%i%")>>tkmng.py
-python tkmng.py
-del tkmng.py
+echo from mngTokens import launch>_tkmng.py
+echo launch("%i%")>>_tkmng.py
+python _tkmng.py
+del _tkmng.py
+goto hold
+
+:pc
+set /p iterations=" #iterations = "
+echo from mngSettings import getSetting>_prnt.py
+echo from psalm import GetPhrase>>_prnt.py
+echo for i in range(0,%iterations%):>>_prnt.py
+echo  p=GetPhrase()>>_prnt.py
+echo  if p != None:>>_prnt.py
+echo   print(p+'\n')>>_prnt.py
+echo --------------------------------------->_output.txt
+echo %iterations% RANDOMLY GENERATED PHRASES>>_output.txt
+echo --------------------------------------->>_output.txt
+echo.>>_output.txt
+python _prnt.py>>_output.txt
+start _output.txt
+del _prnt.py
+goto hold
+
+:pd
+echo from mngSettings import getSetting>_prnt.py
+echo from psalm import GetPhrase>>_prnt.py
+echo p=GetPhrase()>>_prnt.py
+echo if p != None:>>_prnt.py
+echo   print(p)>>_prnt.py
+echo --------------------------------------->_output.txt
+echo RANDOMLY GENERATED PHRASE>>_output.txt
+echo --------------------------------------->>_output.txt
+echo.>>_output.txt
+python _prnt.py>>_output.txt
+start _output.txt
+del _prnt.py
 goto hold
 
 :r
@@ -71,11 +117,11 @@ goto hold
 :sd
 :se
 :sv
-echo from mngSettings import launch>stgsmng.py
-echo launch("%i%")>>stgsmng.py
+echo from mngSettings import launch>_stgsmng.py
+echo launch("%i%")>>_stgsmng.py
 echo.
-python stgsmng.py
-del stgsmng.py
+python _stgsmng.py
+del _stgsmng.py
 goto hold
 
 :z
@@ -84,7 +130,9 @@ if exist lambda.zip del lambda.zip
 goto hold
 
 :hold
-if exist .\__pycache__ rd /s /q .\__pycache__
 pause
+if exist .\__pycache__ rd /s /q .\__pycache__
+if exist .\_*.py del /q .\_*.py
+if exist _output.txt del /q _output.txt
 cls
 goto beggining

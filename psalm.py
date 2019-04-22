@@ -2,57 +2,23 @@ import json, facebook
 from mngSettings import getSetting
 
 TKNCURR_PATH = getSetting("tokenpath")
-PSLAMS_PATH = getSetting("psalmspath")
-N_OF_WORDS = int(getSetting("qtwords"))
-QUATOTAION_MARKS = True if bool(getSetting("qtmarks")) else False
+DICTPATH = getSetting("dictpath")
+WORD_LIMIT = getSetting("wordlimit")
+UPPERCASE = getSetting("upperfirst")
+ENDCHARS = getSetting("endchars")
+QUATOTAION_MARKS = getSetting("quotmarks")
 
-def GetPsalm( filename , maxNumWords ):
-  """ Generates a random psalm passage with
-  a maximum number of words by reading every
-  versicle of the Psalms book (one per line)
-  
-  Returns phrase or None if IO error """
-  from random import choice  
-  try:
-      f = open(filename, "r")
-      s = f.read()
-      f.close()
-  except IOError:
-      print("Couldn't read Pslams.")
-      return None
+def GetPhrase() -> str:
+  """ Generates a random phrase from dictionary
+  Returns phrase or None if IO error
+  """
+  from mngDictionaries import MakePhrase
+  phrase = MakePhrase(DICTPATH, WORD_LIMIT, UPPERCASE, ENDCHARS)
+  if phrase != None and QUATOTAION_MARKS:
+    phrase = '"' + phrase + '"'
+  return phrase
 
-  psalm = s.replace('\n',' ').split()
-  dictionary = {}
-  for i in range(0, len(psalm)-1):
-    if not psalm[i] in dictionary:
-      dictionary[psalm[i]] = [psalm[i+1]]
-    else:
-      dictionary[psalm[i]].append(psalm[i+1])
-
-  first_word = choice(psalm)
-  while not first_word[0].isupper():
-    first_word = choice(psalm)
-
-  psalm_phrase = [ first_word ]
-  for i in range(0, maxNumWords):
-    last_word = psalm_phrase[-1]
-    next_word = choice(dictionary[last_word])
-    psalm_phrase.append(next_word)
-    
-  phrase = " ".join(psalm_phrase)
-  if not '.' in phrase:
-    phrase = phrase + '.'
-  else:
-    while not '.' in psalm_phrase[-1]:
-      psalm_phrase.pop()
-    phrase = " ".join(psalm_phrase)
-  
-  if QUATOTAION_MARKS:
-    return '"'+phrase+'"'
-  else:
-    return phrase
-    
-def IsBotMessage( msg ):
+def IsBotMessage(msg: str) -> bool:
   if QUATOTAION_MARKS:
     from re import match
     m = match("\A\".*\"\Z", msg)
@@ -60,7 +26,7 @@ def IsBotMessage( msg ):
   else:
     return True
 
-def PsalmBot( event, context ):
+def PsalmBot( event, context ) -> None:
   # Main function
   # Parameters are ignored
   # No return value
@@ -76,18 +42,13 @@ def PsalmBot( event, context ):
 
   graph = facebook.GraphAPI(access_token=token)
   print("Generating message...")
-  msg = GetPsalm(PSLAMS_PATH, N_OF_WORDS)
+  msg = GetPhrase()
   if msg == None:
     return
-  while len(msg) < 5:
-    # THRESHHOLD
-    msg = GetPsalm(PSLAMS_PATH, N_OF_WORDS)
-    if msg == None:
-      return
   
   try:
       post = graph.put_object("me", "feed", message=msg)
-      print("Message posted: \""+msg+"\".")
+      print("Message posted:\n"+msg)
       print(json.dumps(post))
   except facebook.GraphAPIError:
       print("An error occurred while trying to post to feed.")
